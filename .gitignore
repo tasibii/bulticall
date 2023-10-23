@@ -4,6 +4,7 @@ out/
 lib/
 deployments/
 temp/
+js-helper/data/*
 
 # Ignores development broadcast logs
 /broadcast
