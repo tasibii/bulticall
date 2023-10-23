@@ -32,7 +32,8 @@ contract BacoorMulticall is Initializable, AccessControlUpgradeable, UUPSUpgrade
         onlyRole(OPERATOR_ROLE)
         returns (bytes[] memory results)
     {
-        results = new bytes[](data.length);
+        uint256 len = data.length;
+        results = new bytes[](len);
 
         uint256 i;
         do {
@@ -40,7 +41,7 @@ contract BacoorMulticall is Initializable, AccessControlUpgradeable, UUPSUpgrade
             unchecked {
                 ++i;
             }
-        } while (i < data.length);
+        } while (i < len);
     }
 
     function exec(
@@ -51,10 +52,9 @@ contract BacoorMulticall is Initializable, AccessControlUpgradeable, UUPSUpgrade
         onlyRole(OPERATOR_ROLE)
         returns (bytes[] memory results)
     {
-        if (targets.length != data.length) {
-            revert("Length mismatch");
-        }
-        results = new bytes[](data.length);
+        uint256 len = data.length;
+        require(targets.length == len);
+        results = new bytes[](len);
 
         uint256 i;
         do {
@@ -62,7 +62,7 @@ contract BacoorMulticall is Initializable, AccessControlUpgradeable, UUPSUpgrade
             unchecked {
                 ++i;
             }
-        } while (i < data.length);
+        } while (i < len);
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }

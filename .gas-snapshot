@@ -1,2 +1,3 @@
-TestMulticall:testExecMultiTarget() (gas: 136031)
-TestMulticall:testExecSingleTarget() (gas: 107933)
+TestMulticall:testAttackFail() (gas: 30796)
+TestMulticall:testExecMultiTarget() (gas: 136014)
+TestMulticall:testExecSingleTarget() (gas: 108004)
