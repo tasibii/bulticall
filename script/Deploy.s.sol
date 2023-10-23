@@ -2,9 +2,8 @@
 pragma solidity ^0.8.13;
 
 import "./BaseScript.s.sol";
-import { Counter } from "test/utils/Counter.sol";
-import { CounterUpgradeable } from "test/utils/CounterUpgradeable.sol";
-import { CounterUpgradeableV2 } from "test/utils/CounterUpgradeableV2.sol";
+import { BacoorMulticall } from "src/BacoorMulticall.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract DeployScript is BaseScript {
     /**
@@ -17,18 +16,11 @@ contract DeployScript is BaseScript {
         vm.stopBroadcast();
     }
 
-    function _deployCounter() internal returns (address deployment) {
-        deployment = deployRaw(type(Counter).name, abi.encode(0));
-    }
-
     function _deployUUPS() internal returns (address proxy, address implementation, string memory kind) {
-        (proxy, implementation, kind) =
-            deployProxyRaw(type(CounterUpgradeable).name, abi.encodeCall(CounterUpgradeable.initialize, 0), "uups");
-    }
-
-    function _deployTransparent() internal returns (address proxy, address implementation, string memory kind) {
         (proxy, implementation, kind) = deployProxyRaw(
-            type(CounterUpgradeableV2).name, abi.encodeCall(CounterUpgradeableV2.initialize, 0), "transparent"
+            type(BacoorMulticall).name,
+            abi.encodeCall(BacoorMulticall.initialize, vm.addr(vm.envUint("DEPLOYER_PRIVATE_KEY"))),
+            "uups"
         );
     }
 }
