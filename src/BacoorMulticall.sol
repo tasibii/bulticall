@@ -52,7 +52,7 @@ contract BacoorMulticall is Initializable, AccessControlUpgradeable, UUPSUpgrade
         returns (bytes[] memory results)
     {
         if (targets.length != data.length) {
-            revert("Params's length mismatch");
+            revert("Length mismatch");
         }
         results = new bytes[](data.length);
 
