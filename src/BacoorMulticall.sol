@@ -8,10 +8,10 @@ import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/ac
 
 contract BacoorMulticall is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
     using Address for address;
-    /// @custom:oz-upgrades-unsafe-allow constructor
 
     bytes32 public constant OPERATOR_ROLE = 0x97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b929;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
@@ -32,8 +32,9 @@ contract BacoorMulticall is Initializable, AccessControlUpgradeable, UUPSUpgrade
         onlyRole(OPERATOR_ROLE)
         returns (bytes[] memory results)
     {
-        uint256 i;
         results = new bytes[](data.length);
+
+        uint256 i;
         do {
             results[i] = target.functionCall(data[i]);
             unchecked {
@@ -50,11 +51,12 @@ contract BacoorMulticall is Initializable, AccessControlUpgradeable, UUPSUpgrade
         onlyRole(OPERATOR_ROLE)
         returns (bytes[] memory results)
     {
-        uint256 i;
         if (targets.length != data.length) {
             revert("Params's length mismatch");
         }
         results = new bytes[](data.length);
+
+        uint256 i;
         do {
             results[i] = targets[i].functionCall(data[i]);
             unchecked {
