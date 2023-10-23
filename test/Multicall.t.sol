@@ -18,6 +18,8 @@ contract TestMulticall is Test {
     address bob = vm.addr(3);
     address alice = vm.addr(4);
 
+    error AccessControlUnauthorizedAccount(address, bytes32);
+
     function setUp() public {
         vm.startPrank(admin);
         token = new MockERC20();
@@ -58,5 +60,23 @@ contract TestMulticall is Test {
 
         assertEq(token.balanceOf(bob), 100);
         assertEq(nft.ownerOf(1), alice);
+    }
+
+    function testAttackFail() public {
+        address[] memory targets = new address[](2);
+        targets[0] = address(token);
+        targets[1] = address(nft);
+
+        bytes[] memory data = new bytes[](2);
+        data[0] = abi.encodeCall(IMockERC20.mint, (bob, 100));
+        data[1] = abi.encodeCall(IMockERC721.mint, (alice, 1));
+
+        vm.startPrank(attacker);
+        vm.expectRevert(
+            abi.encodeWithSelector(AccessControlUnauthorizedAccount.selector, attacker, keccak256("OPERATOR_ROLE"))
+        );
+
+        multicaller.exec(targets, data);
+        vm.stopPrank();
     }
 }
