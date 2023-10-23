@@ -26,7 +26,7 @@ function main(path, size) {
   let i = 0;
   chunked.forEach((item) => {
     fs.writeFileSync(
-      `./js-helper/data/${i * size}~${i * size + size}.txt`,
+      `./js-helper/data/${i * size + 1}~${i * size + size}.txt`,
       "[" + item.toString() + "]"
     );
     ++i;
