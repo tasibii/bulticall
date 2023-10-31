@@ -19,10 +19,16 @@ function chunk(array, size) {
   return chunked;
 }
 
+function uniqueArray(inputArray) {
+  const uniqueSet = new Set(inputArray);
+  return [...uniqueSet];
+}
+
 function main(path, size) {
   const data = fs.readFileSync(path, "utf-8");
   const array = data.split(/\r?\n/);
-  const chunked = chunk(array, size);
+  const cleanArray = uniqueArray(array);
+  const chunked = chunk(cleanArray, size);
   let i = 0;
   chunked.forEach((item) => {
     fs.writeFileSync(
