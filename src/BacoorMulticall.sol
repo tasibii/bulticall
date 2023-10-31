@@ -44,6 +44,7 @@ contract BacoorMulticall is Initializable, AccessControlUpgradeable, UUPSUpgrade
         } while (i < len);
     }
 
+    //?: Why don't we combine multiple data into one target and have multiple targets?
     function exec(
         address[] calldata targets,
         bytes[] calldata data
@@ -64,6 +65,8 @@ contract BacoorMulticall is Initializable, AccessControlUpgradeable, UUPSUpgrade
             }
         } while (i < len);
     }
+
+    //TODO: How about's payable multicall?
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }
 }
