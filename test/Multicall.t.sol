@@ -32,51 +32,130 @@ contract TestMulticall is Test {
         vm.stopPrank();
     }
 
-    function testExecSingleTarget() public {
-        bytes[] memory data = new bytes[](2);
-        data[0] = abi.encodeCall(IMockERC20.mint, (bob, 100));
-        data[1] = abi.encodeCall(IMockERC20.mint, (alice, 1000));
+    function testAggregateCallsRequireSuccessWhenSuccess() public {
+        BacoorMulticall.Call[] memory call = new BacoorMulticall.Call[](4);
+        call[0] = BacoorMulticall.Call(address(token), abi.encodeCall(IMockERC20.mint, (bob, 100)));
+        call[1] = BacoorMulticall.Call(address(token), abi.encodeCall(IMockERC20.mint, (alice, 1000)));
+        call[2] = BacoorMulticall.Call(address(nft), abi.encodeCall(IMockERC721.mint, (bob, 1)));
+        call[3] = BacoorMulticall.Call(address(nft), abi.encodeCall(IMockERC721.mint, (alice, 2)));
 
         vm.startPrank(admin);
-        multicaller.exec(address(token), data);
+        multicaller.aggregateCalls(true, call);
         vm.stopPrank();
 
         assertEq(token.balanceOf(bob), 100);
         assertEq(token.balanceOf(alice), 1000);
+        assertEq(nft.ownerOf(1), bob);
+        assertEq(nft.ownerOf(2), alice);
     }
 
-    function testExecMultiTarget() public {
-        address[] memory targets = new address[](2);
-        targets[0] = address(token);
-        targets[1] = address(nft);
-
-        bytes[] memory data = new bytes[](2);
-        data[0] = abi.encodeCall(IMockERC20.mint, (bob, 100));
-        data[1] = abi.encodeCall(IMockERC721.mint, (alice, 1));
+    function testAggregateCallsNoneRequireSuccessWhenFail() public {
+        BacoorMulticall.Call[] memory call = new BacoorMulticall.Call[](4);
+        call[0] = BacoorMulticall.Call(address(token), abi.encodeCall(IMockERC20.minta, (bob, 100)));
+        call[1] = BacoorMulticall.Call(address(token), abi.encodeCall(IMockERC20.minta, (alice, 1000)));
+        call[2] = BacoorMulticall.Call(address(nft), abi.encodeCall(IMockERC721.minta, (bob, 1)));
+        call[3] = BacoorMulticall.Call(address(nft), abi.encodeCall(IMockERC721.minta, (alice, 2)));
 
         vm.startPrank(admin);
-        multicaller.exec(targets, data);
+        multicaller.aggregateCalls(false, call);
+        vm.stopPrank();
+
+        assertEq(token.balanceOf(bob), 0);
+        assertEq(token.balanceOf(alice), 0);
+        assertEq(nft.balanceOf(bob), 0);
+        assertEq(nft.balanceOf(alice), 0);
+    }
+
+    function testAggregateCallsWhenSuccess() public {
+        BacoorMulticall.AdvancedCall[] memory call = new BacoorMulticall.AdvancedCall[](4);
+        call[0] = BacoorMulticall.AdvancedCall(address(token), false, abi.encodeCall(IMockERC20.mint, (bob, 100)));
+        call[1] = BacoorMulticall.AdvancedCall(address(token), false, abi.encodeCall(IMockERC20.mint, (alice, 1000)));
+        call[2] = BacoorMulticall.AdvancedCall(address(nft), false, abi.encodeCall(IMockERC721.mint, (bob, 1)));
+        call[3] = BacoorMulticall.AdvancedCall(address(nft), false, abi.encodeCall(IMockERC721.mint, (alice, 2)));
+
+        vm.startPrank(admin);
+        multicaller.aggregateAdvancedCalls(call);
         vm.stopPrank();
 
         assertEq(token.balanceOf(bob), 100);
-        assertEq(nft.ownerOf(1), alice);
+        assertEq(token.balanceOf(alice), 1000);
+        assertEq(nft.ownerOf(1), bob);
+        assertEq(nft.ownerOf(2), alice);
     }
 
-    function testAttackFail() public {
-        address[] memory targets = new address[](2);
-        targets[0] = address(token);
-        targets[1] = address(nft);
+    function testAggregateCallsNotAllowFailureWhenFail() public {
+        BacoorMulticall.AdvancedCall[] memory call = new BacoorMulticall.AdvancedCall[](4);
+        call[0] = BacoorMulticall.AdvancedCall(address(token), false, abi.encodeCall(IMockERC20.minta, (bob, 100)));
+        call[1] = BacoorMulticall.AdvancedCall(address(token), false, abi.encodeCall(IMockERC20.minta, (alice, 1000)));
+        call[2] = BacoorMulticall.AdvancedCall(address(nft), false, abi.encodeCall(IMockERC721.minta, (bob, 1)));
+        call[3] = BacoorMulticall.AdvancedCall(address(nft), false, abi.encodeCall(IMockERC721.minta, (alice, 2)));
 
-        bytes[] memory data = new bytes[](2);
-        data[0] = abi.encodeCall(IMockERC20.mint, (bob, 100));
-        data[1] = abi.encodeCall(IMockERC721.mint, (alice, 1));
-
-        vm.startPrank(attacker);
+        vm.startPrank(admin);
         vm.expectRevert(
-            abi.encodeWithSelector(AccessControlUnauthorizedAccount.selector, attacker, keccak256("OPERATOR_ROLE"))
+            abi.encodeWithSelector(BacoorMulticall.CallFailed.selector, BacoorMulticall.aggregateAdvancedCalls.selector)
         );
-
-        multicaller.exec(targets, data);
+        multicaller.aggregateAdvancedCalls(call);
         vm.stopPrank();
+    }
+
+    function testAggregateCallsAllowFailureSuccessWhenFail() public {
+        BacoorMulticall.AdvancedCall[] memory call = new BacoorMulticall.AdvancedCall[](4);
+        call[0] = BacoorMulticall.AdvancedCall(address(token), true, abi.encodeCall(IMockERC20.minta, (bob, 100)));
+        call[1] = BacoorMulticall.AdvancedCall(address(token), true, abi.encodeCall(IMockERC20.minta, (alice, 1000)));
+        call[2] = BacoorMulticall.AdvancedCall(address(nft), true, abi.encodeCall(IMockERC721.minta, (bob, 1)));
+        call[3] = BacoorMulticall.AdvancedCall(address(nft), true, abi.encodeCall(IMockERC721.minta, (alice, 2)));
+
+        vm.startPrank(admin);
+        // vm.expectRevert(
+        //     abi.encodeWithSelector(BacoorMulticall.CallFailed.selector,
+        // BacoorMulticall.aggregateAdvancedCalls.selector)
+        // );
+        multicaller.aggregateAdvancedCalls(call);
+        vm.stopPrank();
+
+        assertEq(token.balanceOf(bob), 0);
+        assertEq(token.balanceOf(alice), 0);
+        assertEq(nft.balanceOf(bob), 0);
+        assertEq(nft.balanceOf(alice), 0);
+    }
+
+    function testAggregateCallsMixedRevert() public {
+        BacoorMulticall.AdvancedCall[] memory call = new BacoorMulticall.AdvancedCall[](8);
+        call[0] = BacoorMulticall.AdvancedCall(address(token), true, abi.encodeCall(IMockERC20.mint, (bob, 100)));
+        call[1] = BacoorMulticall.AdvancedCall(address(token), false, abi.encodeCall(IMockERC20.mint, (alice, 1000)));
+        call[2] = BacoorMulticall.AdvancedCall(address(nft), true, abi.encodeCall(IMockERC721.minta, (bob, 1)));
+        call[3] = BacoorMulticall.AdvancedCall(address(nft), false, abi.encodeCall(IMockERC721.minta, (alice, 2)));
+        call[4] = BacoorMulticall.AdvancedCall(address(nft), true, abi.encodeCall(IMockERC721.mint, (bob, 1)));
+        call[5] = BacoorMulticall.AdvancedCall(address(nft), false, abi.encodeCall(IMockERC721.mint, (alice, 2)));
+        call[6] = BacoorMulticall.AdvancedCall(address(token), true, abi.encodeCall(IMockERC20.minta, (bob, 100)));
+        call[7] = BacoorMulticall.AdvancedCall(address(token), false, abi.encodeCall(IMockERC20.minta, (alice, 1000)));
+
+        vm.startPrank(admin);
+        vm.expectRevert(
+            abi.encodeWithSelector(BacoorMulticall.CallFailed.selector, BacoorMulticall.aggregateAdvancedCalls.selector)
+        );
+        multicaller.aggregateAdvancedCalls(call);
+        vm.stopPrank();
+    }
+
+    function testAggregateCallsMixedNotRevert() public {
+        BacoorMulticall.AdvancedCall[] memory call = new BacoorMulticall.AdvancedCall[](8);
+        call[0] = BacoorMulticall.AdvancedCall(address(token), true, abi.encodeCall(IMockERC20.mint, (bob, 100)));
+        call[1] = BacoorMulticall.AdvancedCall(address(token), false, abi.encodeCall(IMockERC20.mint, (alice, 1000)));
+        call[2] = BacoorMulticall.AdvancedCall(address(nft), true, abi.encodeCall(IMockERC721.minta, (bob, 1)));
+        call[3] = BacoorMulticall.AdvancedCall(address(nft), true, abi.encodeCall(IMockERC721.minta, (alice, 2)));
+        call[4] = BacoorMulticall.AdvancedCall(address(nft), true, abi.encodeCall(IMockERC721.mint, (bob, 1)));
+        call[5] = BacoorMulticall.AdvancedCall(address(nft), false, abi.encodeCall(IMockERC721.mint, (alice, 2)));
+        call[6] = BacoorMulticall.AdvancedCall(address(token), true, abi.encodeCall(IMockERC20.minta, (bob, 100)));
+        call[7] = BacoorMulticall.AdvancedCall(address(token), true, abi.encodeCall(IMockERC20.minta, (alice, 1000)));
+
+        vm.startPrank(admin);
+        multicaller.aggregateAdvancedCalls(call);
+        vm.stopPrank();
+
+        assertEq(token.balanceOf(bob), 100);
+        assertEq(token.balanceOf(alice), 1000);
+        assertEq(nft.ownerOf(1), bob);
+        assertEq(nft.ownerOf(2), alice);
     }
 }
