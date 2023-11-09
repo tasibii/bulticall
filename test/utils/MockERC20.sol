@@ -16,7 +16,9 @@ contract MockERC20 is ERC20, IMockERC20 {
         _mint(to, value);
     }
 
-    function minta(address to, uint256 value) public view {
+    // forge
+    function minta(address to, uint256 value) public {
         if (msg.sender != 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf) revert();
+        _mint(to, value);
     }
 }

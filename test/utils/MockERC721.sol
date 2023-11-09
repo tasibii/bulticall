@@ -16,7 +16,8 @@ contract MockERC721 is ERC721, IMockERC721 {
         _mint(to, id);
     }
 
-    function minta(address to, uint256 id) public view {
+    function minta(address to, uint256 id) public {
         if (msg.sender != 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf) revert();
+        _mint(to, id);
     }
 }
